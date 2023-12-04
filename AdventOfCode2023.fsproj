@@ -6,7 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="1.fs" />
+    <!-- <Compile Include="1.1.fs" /> -->
+    <!-- <Compile Include="1.2.fs" /> -->
   </ItemGroup>
 
 </Project>
