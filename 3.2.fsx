@@ -10,6 +10,7 @@ let isAdjacentToSymbol (schematic: string array) (numberMinX: int) (numberMaxX: 
 
     let isSymbol (c: char) = 
         let a = not (System.Char.IsAsciiDigit c) && c <> '.'
+        // printfn "%A" {| Char = c; IsSymbol = a |} //TODO:REMOVE
         a
 
     let isWithinXBounds (index: int) = not (index < 0) && not (index > rowMax)
@@ -55,6 +56,8 @@ let solve (schematic: string array) =
                     | true ->
                         let minX = curr.Groups.[1].Index
                         let maxX = minX + curr.Groups.[1].Length - 1
+
+                        // printfn "%A" {| Number = (curr.Groups.[1].Value |> int); MinX = minX; MaxX = maxX; Y = y |} //TODO: REMOVE
 
                         match isAdjacentToSymbol schematic minX maxX y with
                         | true -> (curr.Groups.[1].Value |> int)
