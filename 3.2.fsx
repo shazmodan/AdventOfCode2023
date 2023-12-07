@@ -73,8 +73,8 @@ let getNumbersAdjacentToGearSymbol (schematic: string array) (gearX: int) (gearY
 
             match isNumber rightAbove with
             | true ->
-                let parsedLeft = parseLeft (gearX-1) y //parseNumberDirection (gearX-1) y Direction.Left []
-                let parsedRight = parseRight (gearX+1) y //parseNumberDirection (gearX+1) y Direction.Right []
+                let parsedLeft = parseLeft (gearX-1) y
+                let parsedRight = parseRight (gearX+1) y
                 
                 let completeNumberChar = parsedLeft @ [rightAbove] @ parsedRight
                 let number = System.String.Join("", completeNumberChar)
@@ -92,7 +92,6 @@ let getNumbersAdjacentToGearSymbol (schematic: string array) (gearX: int) (gearY
         |> List.filter (System.String.IsNullOrWhiteSpace >> not)
         |> List.map int
 
-    //TODO: Just do like topCells do 
     let bottomCells =
         match gearY + 1 with
         | y when isWithinYBounds y ->
@@ -100,8 +99,8 @@ let getNumbersAdjacentToGearSymbol (schematic: string array) (gearX: int) (gearY
 
             match isNumber rightBelow with
             | true ->
-                let parsedLeft = parseLeft (gearX-1) y //parseNumberDirection (gearX-1) y Direction.Left []
-                let parsedRight = parseRight (gearX+1) y //parseNumberDirection (gearX+1) y Direction.Right []
+                let parsedLeft = parseLeft (gearX-1) y
+                let parsedRight = parseRight (gearX+1) y
                 
                 let completeNumberChar = parsedLeft @ [rightBelow] @ parsedRight
                 let number = System.String.Join("", completeNumberChar)
@@ -124,8 +123,6 @@ let getNumbersAdjacentToGearSymbol (schematic: string array) (gearX: int) (gearY
             if leftCell.IsSome then leftCell.Value
             if rightCell.IsSome then rightCell.Value ] @ topCells @ bottomCells
 
-    //printfn "adjacentNumbers: %A" adjacentNumbers //TODO: REMOVE
-
     adjacentNumbers
 
 
@@ -141,8 +138,6 @@ let solve (schematic: string array) =
                     match curr.Success with
                     | true ->
                         let x = curr.Groups.[1].Index
-
-                        //printfn "row: %A, y: %i, x: %i, value: %s" row y x (curr.Groups.[1].Value) //TODO:REMOVE
 
                         let adjacentNumbers = 
                             let numbers = getNumbersAdjacentToGearSymbol schematic x y
