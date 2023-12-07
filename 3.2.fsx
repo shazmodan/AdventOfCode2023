@@ -2,8 +2,6 @@ open System.Text.RegularExpressions
 
 let readInput () = System.IO.File.ReadLines("3.txt")
 
-type Pos = { X: int; Y: int; Symbol: string }
-
 type Direction =
     | Left
     | Right
@@ -45,11 +43,28 @@ let getNumbersAdjacentToGearSymbol (schematic: string array) (gearX: int) (gearY
 
     let leftCell = 
         let x = max (gearX - 1) 0
-        parseLeft x gearY
+
+        let parsedLeft = 
+            parseLeft x gearY
+            |> Array.ofList 
+            |> System.String.Concat
+
+        match System.String.IsNullOrWhiteSpace parsedLeft with
+        | true -> None
+        | false -> Some (int parsedLeft)
+
 
     let rightCell = 
         let x = min (gearX + 1) (schematic[0].Length - 1)
-        parseRight x gearY
+        
+        let parsedRight = 
+            parseRight x gearY
+            |> Array.ofList 
+            |> System.String.Concat
+        
+        match System.String.IsNullOrWhiteSpace parsedRight with
+        | true -> None
+        | false -> Some (int parsedRight)
 
     let topCells = 
         match gearY - 1 with
@@ -62,74 +77,114 @@ let getNumbersAdjacentToGearSymbol (schematic: string array) (gearX: int) (gearY
                 let parsedRight = parseRight (gearX+1) y //parseNumberDirection (gearX+1) y Direction.Right []
                 
                 let completeNumberChar = parsedLeft @ [rightAbove] @ parsedRight
-                let number = System.String.Join("", completeNumberChar) |> int
+                let number = System.String.Join("", completeNumberChar)
 
                 [ number ]
             | false ->
-                let parsedAboveLeft = parseLeft (gearX-1) (gearY-1) 
-                let parsedAboveRight = parseRight (gearX+1) (gearY+1)
+                let parsedAboveLeft = parseLeft (gearX-1) y
+                let parsedAboveRight = parseRight (gearX+1) y
                 
-                let numberAboveLeft = System.String.Join("", parsedAboveLeft) |> int
-                let numberAboveRight = System.String.Join("", parsedAboveRight) |> int
+                let numberAboveLeft = System.String.Join("", parsedAboveLeft)
+                let numberAboveRight = System.String.Join("", parsedAboveRight)
 
                 [ numberAboveLeft; numberAboveRight ]
         | _ -> []
+        |> List.filter (System.String.IsNullOrWhiteSpace >> not)
+        |> List.map int
 
     //TODO: Just do like topCells do 
     let bottomCells =
         match gearY + 1 with
         | y when isWithinYBounds y ->
-            [ gearMinX-1..gearMaxX+1 ]
-            |> List.filter isWithinXBounds
-            |> List.exists(fun x -> isNumber (schematic[y][x]))
-        | _ -> false
+            let rightBelow = schematic[y][gearX]
 
-    [leftCell; rightCell; topCells; bottomCells] |> List.exists id
+            match isNumber rightBelow with
+            | true ->
+                let parsedLeft = parseLeft (gearX-1) y //parseNumberDirection (gearX-1) y Direction.Left []
+                let parsedRight = parseRight (gearX+1) y //parseNumberDirection (gearX+1) y Direction.Right []
+                
+                let completeNumberChar = parsedLeft @ [rightBelow] @ parsedRight
+                let number = System.String.Join("", completeNumberChar)
+
+                [ number ]
+            | false ->
+                let parsedBelowLeft = parseLeft (gearX-1) y
+                let parsedBelowRight = parseRight (gearX+1) y
+                
+                let numberBelowLeft = System.String.Join("", parsedBelowLeft)
+                let numberAboveRight = System.String.Join("", parsedBelowRight)
+
+                [ numberBelowLeft; numberAboveRight ]
+        | _ -> []
+        |> List.filter (System.String.IsNullOrWhiteSpace >> not)
+        |> List.map int
+
+    let adjacentNumbers =
+        [
+            if leftCell.IsSome then leftCell.Value
+            if rightCell.IsSome then rightCell.Value ] @ topCells @ bottomCells
+
+    //printfn "adjacentNumbers: %A" adjacentNumbers //TODO: REMOVE
+
+    adjacentNumbers
 
 
 let solve (schematic: string array) =
     schematic
     |> Array.mapi 
         (fun y row ->
-            let regexMatch = Regex.Matches(row, "(\d+)")
+            let regexMatch = Regex.Matches(row, "(\*)")
 
             regexMatch
             |> Seq.sumBy 
                 (fun curr ->
                     match curr.Success with
                     | true ->
-                        let minX = curr.Groups.[1].Index
-                        let maxX = minX + curr.Groups.[1].Length - 1
+                        let x = curr.Groups.[1].Index
 
-                        // printfn "%A" {| Number = (curr.Groups.[1].Value |> int); MinX = minX; MaxX = maxX; Y = y |} //TODO: REMOVE
+                        //printfn "row: %A, y: %i, x: %i, value: %s" row y x (curr.Groups.[1].Value) //TODO:REMOVE
 
-                        match isAdjacentToSymbol schematic minX maxX y with
-                        | true -> (curr.Groups.[1].Value |> int)
-                        | false -> 0
+                        let adjacentNumbers = 
+                            let numbers = getNumbersAdjacentToGearSymbol schematic x y
+                            
+                            match numbers.Length > 1 with
+                            | true -> numbers
+                            | false -> []
+
+                        let gearRatio =
+                            (None, adjacentNumbers)
+                            ||> List.fold 
+                                (fun accOpt curr ->
+                                    match accOpt with
+                                    | None -> Some curr
+                                    | Some acc -> Some (curr * acc))
+                            |> Option.defaultValue 0
+
+                        gearRatio
                     | false -> 0
                 )
         )
     |> Array.sum
 
 
-let testData = [|
-    "467..114.."
-    "...*......"
-    "..35..633."
-    "......#..."
-    "617*......"
-    ".....+.58."
-    "..592....."
-    "......755."
-    "...$.*...."
-    ".664.598.."
-|]
+// let testData = [|
+//     "467..114.."
+//     "...*......"
+//     "..35..633."
+//     "......#..."
+//     "617*......"
+//     ".....+.58."
+//     "..592....."
+//     "......755."
+//     "...$.*...."
+//     ".664.598.."
+// |]
 
-let result = testData |> solve
+// let result = testData |> solve
 
-result
-result = 467835
+// result
+// result = 467835
 
-// readInput ()
-// |> Seq.toArray
-// |> solve
+readInput ()
+|> Seq.toArray
+|> solve
