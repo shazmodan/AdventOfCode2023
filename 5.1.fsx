@@ -5,16 +5,16 @@ let (|Regex|_|) pattern input =
     if m.Success then Some(List.tail [ for g in m.Groups -> g.Value ])
     else None
 
-let log a =
-    printfn "%A" a
+let log txt a =
+    printfn "%s%A" txt a
     a
 
 let readInput () = System.IO.File.ReadLines("5.txt")
 
-type Mapping = { From: int; To: int; Range: int }
+type Mapping = { Source: int64; Destination: int64; Range: int64 }
 
 type Maps = 
-    { Seeds: int list
+    { Seeds: int64 list
       SeedToSoilMap: Mapping list
       SoilToFertilizerMap: Mapping list
       FertilizerToWaterMap: Mapping list
@@ -37,7 +37,7 @@ let parseInputIntoMaps (input: string list) =
         let row = List.head input
         let numbers =
             row.Substring(7).Split(" ")
-            |> Array.map int
+            |> Array.map int64
             |> Array.toList
         
         { Maps.Default with Seeds = numbers }
@@ -49,7 +49,7 @@ let parseInputIntoMaps (input: string list) =
             let newAcc =
                 let getMapping (head: string) : Mapping = 
                     match (head.Split( " ") |> Array.toList) with
-                    | [ toNr; fromNr; rangeNr ] -> { From = int fromNr; To = int toNr ; Range = int rangeNr }
+                    | [ toNr; fromNr; rangeNr ] -> { Source = int64 fromNr; Destination = int64 toNr ; Range = int64 rangeNr }
                     | x -> failwithf "Failed to create mapping with: %A" x
 
                 match activeMap = head || head = "" with
@@ -76,10 +76,38 @@ let parseInputIntoMaps (input: string list) =
     
     parseLines "" (List.tail input) maps
 
+let isWithinRange (rangeStart: int64) (rangeLength: int64) (number: int64) =
+    number >= rangeStart && number <= (rangeStart + rangeLength - 1L)
+
+let getDestinationNumber (mapping: Mapping) (number: int64) =
+    match isWithinRange mapping.Source mapping.Range number with
+    | false -> None
+    | true -> number + (mapping.Destination - mapping.Source) |> Some
+
+let getDestinationNumberFromMappings (mappings: Mapping list) (number: int64) =
+    mappings
+    |> List.tryPick (fun mapping -> getDestinationNumber mapping number)
+    |> Option.defaultValue number
+
+let getSourceDestinationChain (mappings: Mapping list list) (numberStart: int64) =
+    (numberStart, mappings)
+    ||> List.scan (fun acc curr -> getDestinationNumberFromMappings curr acc)
+
 let solve (input: string seq) =
     let maps = parseInputIntoMaps (input |> Seq.toList)
 
-    maps
+    let mapsLst = 
+        [ maps.SeedToSoilMap; maps.SoilToFertilizerMap; maps.FertilizerToWaterMap; maps.WaterToLightMap; maps.LightToTemperatureMap; maps.TemperatureToHumidityMap; maps.HumidityToLocationMap ]
+    
+    let sourceDestinationChains =
+        maps.Seeds
+        |> List.map (fun seed -> getSourceDestinationChain mapsLst seed)
+
+    let lowestLastNumbers =
+        ([], sourceDestinationChains)
+        ||> List.fold (fun acc curr -> (curr |> List.last) :: acc)
+    
+    List.min lowestLastNumbers
 
 
 let testData =
@@ -118,5 +146,6 @@ let testData =
       "56 93 4" 
     ]
 
-testData |> solve
+// testData |> solve
+readInput () |> solve
 
