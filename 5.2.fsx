@@ -9,8 +9,6 @@ let log txt a =
     printfn "%s%A" txt a
     a
 
-let readInput () = System.IO.File.ReadLines("5test.txt")
-
 type Mapping = { Source: int64; Destination: int64; Range: int64 }
 
 type Maps = 
@@ -89,9 +87,9 @@ let getDestinationNumberFromMappings (mappings: Mapping list) (number: int64) =
     |> List.tryPick (fun mapping -> getDestinationNumber mapping number)
     |> Option.defaultValue number
 
-let getSourceDestinationChain (mappings: Mapping list list) (numberStart: int64) =
+let getFinalDestination (mappings: Mapping list list) (numberStart: int64) =
     (numberStart, mappings)
-    ||> List.scan (fun acc curr -> getDestinationNumberFromMappings curr acc)
+    ||> List.fold (fun acc curr -> getDestinationNumberFromMappings curr acc)
 
 let solve (input: string seq) =
     let maps = parseInputIntoMaps (input |> Seq.toList)
@@ -105,68 +103,71 @@ let solve (input: string seq) =
         | a :: b :: tail -> createSeedAndMaxValue ((a,a + b - 1L) :: acc) tail
         | x -> failwithf "Cannot createSeedPairs with this: %A" x
 
-    let sourceDestinationChains =
-        let generateSeeds = 
-            Seq.unfold 
-                (fun (seed, maxValue) -> 
-                    if seed > maxValue then 
-                        None 
-                    else
-                        Some ((seed, maxValue), (seed + 1L, maxValue))
-                )
+    let generateSeeds = 
+        Seq.unfold 
+            (fun (seed, maxValue) -> 
+                if seed > maxValue then 
+                    None 
+                else
+                    Some ((seed, maxValue), (seed + 1L, maxValue))
+            )
 
-        let seeds =
-            maps.Seeds
-            |> createSeedAndMaxValue []
-            |> Seq.map generateSeeds
-            |> Seq.concat
+    let seeds =
+        maps.Seeds
+        |> createSeedAndMaxValue []
+        |> List.toSeq
+        |> Seq.map generateSeeds
+        |> Seq.concat
 
-        seeds
-        |> Seq.map (fun (seed, maxValue) -> getSourceDestinationChain mapsLst seed)
+    let destinations =
+        (System.Int64.MaxValue,seeds)
+        ||> Seq.fold (fun acc curr -> min (fst curr |> getFinalDestination mapsLst) acc)
 
-    let lowestLastNumbers =
-        ([], sourceDestinationChains)
-        ||> Seq.fold (fun acc curr -> (curr |> Seq.last) :: acc)
-    
-    List.min lowestLastNumbers
+    destinations
 
 
-let testData =
-    [ "seeds: 79 14 55 13"
-      ""
-      "seed-to-soil map:"
-      "50 98 2"
-      "52 50 48"
-      ""
-      "soil-to-fertilizer map:"
-      "0 15 37"
-      "37 52 2"
-      "39 0 15"
-      ""
-      "fertilizer-to-water map:"
-      "49 53 8"
-      "0 11 42"
-      "42 0 7"
-      "57 7 4"
-      ""
-      "water-to-light map:"
-      "88 18 7"
-      "18 25 70"
-      ""
-      "light-to-temperature map:"
-      "45 77 23"
-      "81 45 19"
-      "68 64 13"
-      ""
-      "temperature-to-humidity map:"
-      "0 69 1"
-      "1 0 69"
-      ""
-      "humidity-to-location map:"
-      "60 56 37"
-      "56 93 4" 
-    ]
+// let testData =
+//     [ "seeds: 79 14 55 13"
+//       ""
+//       "seed-to-soil map:"
+//       "50 98 2"
+//       "52 50 48"
+//       ""
+//       "soil-to-fertilizer map:"
+//       "0 15 37"
+//       "37 52 2"
+//       "39 0 15"
+//       ""
+//       "fertilizer-to-water map:"
+//       "49 53 8"
+//       "0 11 42"
+//       "42 0 7"
+//       "57 7 4"
+//       ""
+//       "water-to-light map:"
+//       "88 18 7"
+//       "18 25 70"
+//       ""
+//       "light-to-temperature map:"
+//       "45 77 23"
+//       "81 45 19"
+//       "68 64 13"
+//       ""
+//       "temperature-to-humidity map:"
+//       "0 69 1"
+//       "1 0 69"
+//       ""
+//       "humidity-to-location map:"
+//       "60 56 37"
+//       "56 93 4" 
+//     ]
 
 
-testData |> solve
-//readInput () |> solve
+// let answer = testData |> solve
+
+let readInput () = System.IO.File.ReadLines("5.txt")
+let answer = readInput () |> solve
+
+printfn "Answer is: %i" answer
+
+
