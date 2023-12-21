@@ -1,4 +1,3 @@
-open System
 open System.Text.RegularExpressions
 
 let (|Regex|_|) pattern input =
@@ -44,7 +43,6 @@ let charToCard =
     | '2' -> Card.Two
     | x -> failwithf "Unrecognized card: %c" x
 
-
 type HandType =
     | HighCard = 1
     | OnePair = 2
@@ -56,29 +54,10 @@ type HandType =
 
 type NrOfOccurrences = int
 
-// [<CustomComparison; CustomEquality>]
 type Hand =
-    {
-        Cards: Card list
-        Bid: int
-        HandType: HandType
-    }
-    // override this.Equals other =
-    //     match other with
-    //     | :? Hand as h -> h.Cards.Equals this.Cards && h.Bid.Equals this.Bid 
-    //     | _ -> false
-    
-    // override this.GetHashCode () = this.GetHashCode()
-
-    // interface IComparable with
-    //     member this.CompareTo other =
-    //         match other with
-    //         | :? Hand as h -> (this :> IComparable<_>).CompareTo h
-    //         | _ -> -1
-
-    // interface IComparable<Hand> with
-    //     member this.CompareTo other = other.HandType.CompareTo this.HandType
-
+    { Cards: Card list
+      Bid: int
+      HandType: HandType }
 
 let isFiveOfAKind (cardOccurrences: (Card * NrOfOccurrences) list) =
     cardOccurrences.Length = 1
@@ -91,15 +70,15 @@ let isFourOfAKind (cardOccurrences: (Card * NrOfOccurrences) list) =
 let isFullHouse (cardOccurrences: (Card * NrOfOccurrences) list) =
     match cardOccurrences with
     | [ (_, occurrenceA); (_, occurrenceB) ] -> 
-        (occurrenceA = 3 && occurrenceB = 2) || (occurrenceA = 2 && occurrenceB = 2)
+        (occurrenceA = 3 && occurrenceB = 2) || (occurrenceA = 2 && occurrenceB = 3)
     | _ -> false
 
 let isThreeOfAKind (cardOccurrences: (Card * NrOfOccurrences) list) =
     match cardOccurrences with
     | [ (_, occurrenceA); (_, occurrenceB); (_, occurrenceC) ] -> 
         (occurrenceA = 3 && occurrenceB = 1 && occurrenceC = 1) 
-        || (occurrenceB = 3 && occurrenceA = 1 && occurrenceC = 1) 
-        || (occurrenceC = 3 && occurrenceA = 1 & occurrenceB = 2)
+        || (occurrenceA = 1 && occurrenceB = 3 && occurrenceC = 1) 
+        || (occurrenceA = 1 && occurrenceB = 1 && occurrenceC = 3)
     | _ -> false
 
 let isTwoPair (cardOccurrences: (Card * NrOfOccurrences) list) =
@@ -113,8 +92,8 @@ let isTwoPair (cardOccurrences: (Card * NrOfOccurrences) list) =
 let isOnePair (cardOccurrences: (Card * NrOfOccurrences) list) =
     let occurancesWithoutPair =
         cardOccurrences |> List.filter (fun (card, occurrence) -> occurrence <> 2)
-    
-    match occurancesWithoutPair.Length = 4 with
+
+    match occurancesWithoutPair.Length = 3 with
     | false -> false
     | true -> occurancesWithoutPair |> List.forall (fun (card, occurrence) -> occurrence = 1)
 
@@ -175,10 +154,14 @@ let sortHands (hands: Hand seq) =
 
     hands |> Seq.sortWith sortHandsFn
 
+let multiplyHandBidWithRank (rank: int) (hand: Hand) = hand.Bid * rank
+
 let solve (input: string seq) =
     parseInput input
     |> sortHands
-
+    |> Seq.toList
+    |> Seq.mapi (fun i hand -> multiplyHandBidWithRank (i+1) hand)
+    |> Seq.sum
 
 let testData = 
     [
@@ -187,8 +170,12 @@ let testData =
         "KK677 28"
         "KTJJT 220"
         "QQQJA 483"
+        // "22768 633"
+        // "228JK 466"
+        // "23323 36"
     ]
 
-let answer = testData |> solve |> Seq.toList
+let answer = readInput () |> solve
+// let answer = testData |> solve
 
 printfn "Answer: %A" answer
