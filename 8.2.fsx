@@ -42,45 +42,21 @@ let parseInput (input: string seq) =
 
     { Instructions = instructions; ElementDict = elementDict}
 
-// let getRequiredNumberOfSteps (startNode: Node) (network: Network) =
-//     let networkInstructions = network.Instructions
-//     let elementDict = network.ElementDict
+let rec gcd (a: int64) (b: int64) =
+    if b = 0 then 
+        abs a
+    else 
+        gcd b (a % b)
 
-//     let rec getSteps (currentNode: Node) (instructions: char list) (nrOfSteps: int) =
-//         match currentNode.Name with
-//         | x when x.EndsWith "Z" -> (currentNode, nrOfSteps) // terminal condition
-//         | _ ->
-//             match instructions with
-//             | [] ->
-//                 getSteps currentNode networkInstructions nrOfSteps // reset instructions
-//             | currentInstruction :: remainingInstructions ->
-//                 let nextNode =
-//                     match currentInstruction with
-//                     | 'L' -> elementDict[currentNode.Left]
-//                     | 'R' -> elementDict[currentNode.Right]
-//                     | x -> failwithf "Unrecognized currentInstruction: '%c'" x
+let lcmSimple (a: int64) (b:int64) = (a*b) / (gcd a b)
 
-//                 getSteps nextNode remainingInstructions (nrOfSteps + 1)
+let rec lcm = 
+    function
+    | [ a;b ] -> lcmSimple a b
+    | head :: tail -> lcmSimple (head) (lcm (tail))
+    | [] -> 1
 
-//     getSteps startNode networkInstructions 0
-
-// let getSteps (currentNode: Node) (instructions: char list) (nrOfSteps: int) =
-//     match currentNode.Name with
-//     | x when x.EndsWith "Z" -> (currentNode, nrOfSteps) // terminal condition
-//     | _ ->
-//         match instructions with
-//         | [] ->
-//             getSteps currentNode networkInstructions nrOfSteps // reset instructions
-//         | currentInstruction :: remainingInstructions ->
-//             let nextNode =
-//                 match currentInstruction with
-//                 | 'L' -> elementDict[currentNode.Left]
-//                 | 'R' -> elementDict[currentNode.Right]
-//                 | x -> failwithf "Unrecognized currentInstruction: '%c'" x
-
-//             getSteps nextNode remainingInstructions (nrOfSteps + 1)
-
-let solve (input: string seq) : int = 
+let solve (input: string seq) = 
     let network = input |> parseInput
     
     let startNodes = 
@@ -105,7 +81,7 @@ let solve (input: string seq) : int =
 
     let instructions = network.Instructions
 
-    let getNextNode (instruction: char) (node: Node) =
+    let getNextNode (instruction: char) (node: Node) : Node =
         match instruction with
         | 'L' -> node.Left
         | 'R' -> node.Right
@@ -119,12 +95,15 @@ let solve (input: string seq) : int =
             let currentInstruction = instructions[nrOfSteps % instructions.Length]
             let nextNodes = nodes |> List.map (getNextNode currentInstruction)
 
-            // printfn "currentInstruction: %c, nextNodes: %A" currentInstruction (nextNodes |> List.map (fun x -> x.Name))
-
             moveForward nextNodes (nrOfSteps + 1)
-    
-    moveForward startNodes 0
 
+    let stepsUntilZ = 
+        startNodes 
+        |> List.map (List.singleton)
+        |> List.map (fun x -> moveForward x 0 |> int64)
+
+    stepsUntilZ
+    |> lcm
 
 let testData =
     [
