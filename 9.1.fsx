@@ -16,23 +16,38 @@ let stringToIntegers (str: string) =
     |> Array.map int
     |> Array.toList
 
-let getDifference (a: int) (b: int) = System.Math.Abs(a-b)
-
-let rec getDiff (numbers: int list) (acc: int list) =
+let rec getDifferences (numbers: int list) (acc: int list) =
     match numbers with
-    | [] -> acc |> List.rev
-    | [ x ] -> acc |> List.rev
+    | [] -> acc
+    | [ x ] -> acc
     | head1 :: head2 :: tail ->
-        let diff = getDifference head1 head2
-        getDiff (head2 :: tail) (diff :: acc)
+        let diff = System.Math.Abs(head1 - head2)
+        getDifferences (head2 :: tail) (diff :: acc)
 
-let getNextSequence (numbers: int list) = getDiff numbers []
+let getAllDiffSequences (numbers: int list) = 
+    let sequences =
+        let generator (numbers: int list) =
+            printfn "generator numbers: %A" numbers
+            if numbers |> List.forall ((=) 0) then
+                None
+            else
+                let diffs = [] |> getDifferences numbers |> List.rev
+                printfn "diffs: %A" diffs
+                Some(diffs, diffs)
+
+        List.unfold generator (numbers |> List.rev)
+
+    (numbers |> List.rev) :: sequences
+
+let climbUpTheTree (numbers: int list list) =
+    (0, numbers)
+    ||> List.fold (fun acc curr -> curr.Head + acc)
 
 
 let solve (input: string seq) =
     input
-    |> Seq.map stringToIntegers
-    |> Seq.map getNextSequence
+    |> Seq.map (stringToIntegers >> getAllDiffSequences >> List.rev >> log "tree: " >> climbUpTheTree)
+    |> Seq.sum
 
 let testData =
     [
