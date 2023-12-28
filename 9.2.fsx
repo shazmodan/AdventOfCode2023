@@ -41,10 +41,9 @@ let climbUpTheTree (numbers: int list list) =
     (0, numbers)
     ||> List.fold (fun acc curr -> curr.Head + acc)
 
-
 let solve (input: string seq) =
     input
-    |> Seq.map (stringToIntegers >> getAllDiffSequences >> List.rev >> climbUpTheTree)
+    |> Seq.map (stringToIntegers >> List.rev >> getAllDiffSequences >> List.rev >> climbUpTheTree)
     |> Seq.sum
 
 let testData =
